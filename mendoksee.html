@@ -1,0 +1,213 @@
+<html>
+<head></head>
+<body>
+<canvas id='canvas'></canvas>
+<img id='img' />
+		
+	<script>
+		var canvas;
+		var ctx;
+		var fps = 30;
+		var lost = false;
+		var startgame = false;
+		var finalScore = 0;
+		var score = 0;
+		
+		window.onload = function(){
+		canvas = document.getElementById("canvas");
+		ctx = canvas.getContext("2d");
+		canvas.width = 800;
+		canvas.height = 600;
+		
+		
+		canvas.addEventListener("mousedown",mouseClick);
+		document.addEventListener("keydown",KeyP);
+		setInterval(move,1000/fps);
+		}
+		//
+		var lastEvent;
+		
+		function mouseClick(){
+		//u cant click to restart the game while playing
+		if (startgame){
+		return;
+		}
+		//almost everything resets
+			Obs = [];
+			stars = [];
+		for(var i=0;i<numStars;i++){
+			stars[i] = new Star();				
+		}
+		for(var j=0;j<numObs;j++){
+			Obs[j] = new Obstacles();
+		}
+			startgame = true;
+			lost = false;
+			vx = 8;
+			finalScore = 0;
+		}
+		
+		var px = innerWidth/7;
+		var py = innerHeight*0.6+13;
+		var player1 = new Player();
+		
+		//gets called 30 times a second
+		function move(){
+			draw();	
+		}
+		//only allowed to hit space every 0.7seconds
+				var lastCallTime = 0;
+					function KeyP(evt){		
+						var now = Date.now();
+		
+						if(evt.keyCode == 32 && now - lastCallTime >700){
+						if(startgame){
+							player1.up();
+							}
+						lastCallTime = now;
+						}		
+					}		
+			
+		var image = document.getElementById("img");
+		var numStars = 100;
+		var numObs = 4;
+			
+		function Star(){
+		this.x = Math.floor(Math.random()*innerWidth);
+		this.y = Math.floor(Math.random()*innerHeight-300);
+		this.radius = Math.floor(Math.random()*5);
+		
+		this.show = function(){
+		this.x -= vx;
+		if(this.x <= 0){
+			this.x = canvas.width;
+			}
+			ctx.fillStyle = 'white';
+			ctx.beginPath();
+			ctx.arc(this.x,this.y,this.radius,0,Math.PI*2,true)
+			ctx.fill();
+			}
+			
+		}
+		function Obstacles(){
+		this.xX = Math.floor((Math.random()*20+2)*innerWidth);
+		this.yY = innerHeight*0.6+13;
+		this.wW = 15;
+		this.hH = Math.random()+12*5;
+		
+		this.hits = function(player1){	
+			//if you hit the obstacles
+			if(player1.y == this.yY && player1.x+60 > this.xX && player1.x < this.xX +15){
+				startgame = false;
+				lost = true;
+				return lost;
+			}
+			//if you jump over the obstacles you get points
+			if(player1.y+300 > this.yY && player1.x+60 > this.xX && player1.x < this.xX +15){
+			score++;
+			finalScore = score;
+				}
+		
+		}
+		this.showO = function(){
+			this.xX -= vx;
+				if(this.xX <= 0){
+				this.xX = canvas.width*(Math.random()*10+1);				
+					}
+					ctx.fillStyle = 'red';
+			ctx.fillRect(this.xX,this.yY,this.wW,this.hH);
+			//speeds up 
+			vx+=0.001;
+			}
+		}
+		function draw(){
+		drawRect(0,0,canvas.width,canvas.height,'black');
+		ctx.fillStyle = 'white';
+		ctx.font = '20px Arial';
+		ctx.fillText('CLICK TO START',300,300);
+	if(startgame){
+		//background
+			drawRect(0,0,canvas.width,canvas.height,'black');
+		//floor
+			drawRect(0,0.9*canvas.height,canvas.width,canvas.height,'grey');
+		//stars
+			for(var i=0;i<numStars;i++){
+			stars[i].show();
+				}
+		//obstacles
+			for(var j=0;j<numObs;j++){
+			if(Obs[j].hits(player1)){	
+		return;
+			}
+			Obs[j].showO();
+				}
+		//character
+		
+		player1.upd();
+		player1.show();
+		
+		ctx.font = '20px Arial';
+		ctx.fillText('SCORE: '+score,650,60);
+			}
+	if(lost){
+			drawRect(0,0,canvas.width,canvas.height,'black');
+			ctx.fillStyle = 'white';
+			ctx.font = '20px Arial';
+			ctx.fillText('GAME OVER',300,200);
+			ctx.fillText('click to start again',280,250)
+			ctx.fillText('SCORE : '+finalScore,650,60);
+			score = 0;
+			}
+		}
+		
+		function drawRect(x,y,w,h,color){
+		ctx.fillStyle = color;
+		ctx.fillRect(x,y,w,h);
+		}
+		function drawC(x,y,w,h){
+			image.style.position = 'absolute';
+			
+			image.style.left = x;
+			image.style.top = y;
+			image.width = w;
+			image.height = h;
+		}	
+		
+		
+		function Player(){
+			this.x = innerWidth/7;
+			this.y = innerHeight*0.6+13;
+			this.w = 60;
+			this.h = 60;
+			this.gravity = 0.2;
+			this.v = 0;
+			this.lift = -12;
+			
+			this.show = function(){
+				drawC(this.x,this.y,this.w,this.h);
+				
+			}
+			this.upd = function(){
+				this.v += this.gravity;
+				this.v *= 1.3;
+				this.y += this.v;
+				//no gravity while runnin'
+				if(this.y > innerHeight*0.6+13){
+				this.y = innerHeight*0.6+13;
+				this.v = 0;
+				image.src = 'run.png';
+				}
+				if(this.y < 300){
+					this.y = 300;
+					this.v = 0;
+				}
+			}
+			//jumpin
+			this.up = function(){	
+				this.v += this.lift;
+				image.src ='jump.png';
+			}
+		} 
+	</script>
+</body>
+</html>
